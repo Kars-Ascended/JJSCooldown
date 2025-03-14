@@ -37,7 +37,7 @@ class CountdownApp:
             self.font_loaded = False
 
         self.root.title("Countdown Timer")
-        self.root.geometry("1200x350")
+        self.root.geometry("1500x1000")
         self.root.attributes('-topmost', True, '-transparentcolor', '#FFFF00')
         self.root.overrideredirect(True)  # Remove title bar
         self.root.configure(bg='#FFFF00')  # Set window background to yellow for transparency
@@ -95,6 +95,18 @@ class CountdownApp:
         )
         description.pack(pady=5)
 
+        # Add checkbox for restart control
+        self.allow_restart_anytime = tk.BooleanVar(value=False)
+        self.restart_checkbox = tk.Checkbutton(
+            self.input_frame,
+            text="restart cooldown bar with 'R' at any time (useful if using multiple todo bars at the same time)",
+        
+            variable=self.allow_restart_anytime,
+            font=self.custom_font
+        )
+
+        self.restart_checkbox.pack(pady=5)
+
         # Define presets with their times and colors (make the main colour the average of the ult bar colours, and the completed colour the top of the ult bar)
         self.presets = {
             'Gojo': {'time': 15.6, 'color': '#02acff', 'completed_color': '#2bd5ff', 'text': 'Limitless'},
@@ -104,7 +116,7 @@ class CountdownApp:
             'Mahito': {'time': 0.2, 'color': '#558dff', 'completed_color': '#a6a9ff', 'text': 'Self Transfiguration'},
             'Choso': {'time': 20.5, 'color': '#410000', 'completed_color': '#7f0000', 'text': 'Convergence'},
             'Todo (Normal)': {'time': 10.5, 'color': '#80d5ff', 'completed_color': '#f9fdff', 'text': 'Boogie Woogie'},
-            'Todo (Perfect / Bluff)': {'time': 2, 'color': '#80d5ff', 'completed_color': '#f9fdff', 'text': 'Boogie Woogie'},
+            'Todo (Perfect / Bluff)': {'time': 2, 'color': '#80d5ff', 'completed_color': '#f9fdff', 'text': 'Perfect Boogie Woogie'},
             'Todo (Throwable)': {'time': 5, 'color': '#80d5ff', 'completed_color': '#f9fdff', 'text': 'Boogie Woogie'},
             'Higuruma (NOT ADDED YET)': {'time': 2, 'color': '#795023', 'completed_color': '#b07f3c', 'text': 'NONE'},
             'Locust': {'time': 10.4, 'color': '#398d00', 'completed_color': '#54a900', 'text': 'Fluttering Pounce'}
@@ -301,7 +313,7 @@ class CountdownApp:
 
     def on_press(self, key):
         try:
-            if key.char == 'r' and not self.counting:
+            if key.char == 'r' and (not self.counting or self.allow_restart_anytime.get()):
                 if self.last_time in [self.yuji_config['cleave']['time']] and self.last_color == self.yuji_config['color']:
                     self.start_countdown(self.last_time, self.yuji_config['color'], self.yuji_config['completed_color'])
                 else:
