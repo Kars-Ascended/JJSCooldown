@@ -114,6 +114,22 @@ class CountdownApp:
         self.listener = keyboard.Listener(on_press=self.on_press)
         self.listener.start()
         
+        # Cache for preset lookups
+        self.preset_cache = {}
+        # Cache for commonly used values
+        self.canvas_width = 304
+        self.progress_start = 2
+        self.progress_end = 301
+        self.progress_height = 21
+        
+        # Yuji's specific values
+        self.yuji_config = {
+            'normal': {'time': 2, 'text': 'Combat Instincts'},
+            'cleave': {'time': 13.5, 'text': 'Cleave'},
+            'color': '#860000',
+            'completed_color': '#f90000'
+        }
+        
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.root.mainloop()
     
@@ -129,55 +145,55 @@ class CountdownApp:
         self.root.geometry(f"+{x}+{y}")
     
     def start_countdown(self, seconds, color, completed_color=None, start_immediately=True):
+        # Cache preset lookup result
+        cache_key = f"{seconds}_{color}"
+        if cache_key not in self.preset_cache:
+            try:
+                preset = next(
+                    value for value in self.presets.values()
+                    if value['time'] == seconds and value['color'] == color
+                )
+                self.preset_cache[cache_key] = preset
+            except StopIteration:
+                self.preset_cache[cache_key] = None
+
+        preset = self.preset_cache[cache_key]
+        
         self.total_seconds = seconds
         self.last_time = seconds
         self.last_color = color
         
-        # Handle completed color
-        if completed_color:
-            self.current_completed_color = completed_color
-        else:
-            # Find the preset's completed color
-            try:
-                self.current_completed_color = self.presets[next(
-                    key for key, value in self.presets.items() 
-                    if value['time'] == seconds and value['color'] == color
-                )]['completed_color']
-            except StopIteration:
-                # Fallback to last known completed color if preset not found
-                self.current_completed_color = self.last_color
+        # Simplified color handling
+        self.current_completed_color = completed_color or (preset['completed_color'] if preset else self.last_color)
         
         if start_immediately:
             self.counting = True
             self.start_time = time.time()
             self.elapsed = 0
             self.canvas.itemconfig(self.progress_bar, fill=color, outline=color)
-            self.canvas.itemconfig(self.text_element, text="")  # Hide text during countdown
+            self.canvas.itemconfig(self.text_element, text="")
         else:
             self.counting = False
-            self.canvas.coords(self.progress_bar, 2, 2, 301, 21)  # Adjusted coordinates
-            self.canvas.itemconfig(self.progress_bar, fill=self.current_completed_color, outline=self.current_completed_color)
-            # Show ability text
-            try:
-                text = self.presets[next(
-                    key for key, value in self.presets.items() 
-                    if value['time'] == seconds and value['color'] == color
-                )]['text']
-                self.canvas.itemconfig(self.text_element, text=text)
-            except StopIteration:
-                self.canvas.itemconfig(self.text_element, text="")
-            # Hide input frame and show progress bar
+            self.canvas.coords(self.progress_bar, self.progress_start, self.progress_start, 
+                             self.progress_end, self.progress_height)
+            self.canvas.itemconfig(self.progress_bar, 
+                                 fill=self.current_completed_color, 
+                                 outline=self.current_completed_color)
+            # Show text directly from cache if available
+            self.canvas.itemconfig(self.text_element, 
+                                 text=(preset['text'] if preset else ""))
+            
             self.input_frame.pack_forget()
             self.label.pack_forget()
             self.canvas.pack(pady=0)
-            self.root.geometry("304x24")
+            self.root.geometry(f"{self.canvas_width}x24")
             return
 
         self.countdown()
 
     def countdown(self):
         if self.counting:
-            self.elapsed = (time.time() - self.start_time)
+            self.elapsed = time.time() - self.start_time
             remaining = self.total_seconds - self.elapsed
             
             if remaining > 0:
@@ -188,29 +204,31 @@ class CountdownApp:
                 self.root.geometry("304x24")
                 self.root.configure(bg='#FFFF00')  # Ensure background stays yellow
                 
-                # Calculate smooth progress (adjusted for new coordinates)
-                progress_width = (self.elapsed / self.total_seconds) * 299 + 2
-                self.canvas.coords(self.progress_bar, 2, 2, progress_width, 21)
+                # Optimized progress calculation
+                progress_width = self.progress_start + (self.elapsed / self.total_seconds) * 299
+                self.canvas.coords(self.progress_bar, self.progress_start, self.progress_start,
+                                 progress_width, self.progress_height)
                 self.canvas.itemconfig(self.text_element, text="")  # Hide text during countdown
                 
                 self.root.after(self.update_interval, self.countdown)
             else:
                 # Countdown complete (adjusted for 2px border)
                 self.counting = False
-                self.canvas.coords(self.progress_bar, 2, 2, 301, 21)
-                self.canvas.itemconfig(self.progress_bar, fill=self.current_completed_color, outline=self.current_completed_color)
-                # Show ability text based on mode
-                if self.is_cleave_mode and self.last_color == '#860000':
-                    self.canvas.itemconfig(self.text_element, text="Cleave")
+                self.canvas.coords(self.progress_bar, self.progress_start, self.progress_start,
+                                 self.progress_end, self.progress_height)
+                self.canvas.itemconfig(self.progress_bar, 
+                                     fill=self.current_completed_color,
+                                     outline=self.current_completed_color)
+                
+                # Simplified text display logic
+                if self.is_cleave_mode and self.last_color == self.yuji_config['color']:
+                    text = self.yuji_config['cleave']['text']
                 else:
-                    try:
-                        text = self.presets[next(
-                            key for key, value in self.presets.items() 
-                            if value['time'] == self.last_time and value['color'] == self.last_color
-                        )]['text']
-                        self.canvas.itemconfig(self.text_element, text=text)
-                    except StopIteration:
-                        self.canvas.itemconfig(self.text_element, text="")
+                    cache_key = f"{self.last_time}_{self.last_color}"
+                    preset = self.preset_cache.get(cache_key)
+                    text = preset['text'] if preset else ""
+                
+                self.canvas.itemconfig(self.text_element, text=text)
 
     def reset_ui(self):
         """Reset the UI to show buttons again"""
@@ -222,36 +240,37 @@ class CountdownApp:
     def on_press(self, key):
         try:
             if key.char == 'r' and not self.counting:
-                if self.last_time in [12, 13.5] and self.last_color == '#860000':
-                    # Special case for Yuji's extended timer
-                    self.start_countdown(self.last_time, '#860000', '#f90000')
+                if self.last_time in [self.yuji_config['cleave']['time']] and self.last_color == self.yuji_config['color']:
+                    self.start_countdown(self.last_time, self.yuji_config['color'], self.yuji_config['completed_color'])
                 else:
                     self.start_countdown(self.last_time, self.last_color)
-            elif key.char == 'g':  # Toggle timer
-                if self.last_color == '#860000':  # Check if it's Yuji's color
-                    if self.last_time == 2:  # Normal timer -> Special timer
-                        self.is_cleave_mode = True
-                        if self.counting:
-                            remaining_ratio = 1 - (self.elapsed / self.total_seconds)
-                            self.elapsed = (1 - remaining_ratio) * 13.5
-                            self.total_seconds = 13.5
-                            self.start_time = time.time() - self.elapsed
-                        else:
-                            self.start_countdown(13.5, '#860000', '#f90000', start_immediately=False)
-                        self.canvas.itemconfig(self.text_element, text="Cleave")
-                    elif self.last_time in [12, 13.5]:  # Special timer -> Normal timer
-                        self.is_cleave_mode = False
-                        if self.counting:
-                            remaining_ratio = 1 - (self.elapsed / self.total_seconds)
-                            self.elapsed = (1 - remaining_ratio) * 2
-                            self.total_seconds = 2
-                            self.start_time = time.time() - self.elapsed
-                        else:
-                            self.start_countdown(2, '#860000', '#f90000', start_immediately=False)
-                        self.canvas.itemconfig(self.text_element, text="Combat Instincts")
-                    self.last_time = self.total_seconds
+            elif key.char == 'g' and self.last_color == self.yuji_config['color']:
+                self._toggle_yuji_mode()
         except AttributeError:
             pass
+
+    def _toggle_yuji_mode(self):
+        """Helper method for Yuji's mode toggle logic"""
+        if self.last_time == self.yuji_config['normal']['time']:
+            self.is_cleave_mode = True
+            new_time = self.yuji_config['cleave']['time']
+            text = self.yuji_config['cleave']['text']
+        else:
+            self.is_cleave_mode = False
+            new_time = self.yuji_config['normal']['time']
+            text = self.yuji_config['normal']['text']
+
+        if self.counting:
+            remaining_ratio = 1 - (self.elapsed / self.total_seconds)
+            self.elapsed = (1 - remaining_ratio) * new_time
+            self.total_seconds = new_time
+            self.start_time = time.time() - self.elapsed
+        else:
+            self.start_countdown(new_time, self.yuji_config['color'], 
+                               self.yuji_config['completed_color'], start_immediately=False)
+        
+        self.canvas.itemconfig(self.text_element, text=text)
+        self.last_time = new_time
     
     def on_closing(self):
         self.listener.stop()
