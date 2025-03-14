@@ -37,7 +37,7 @@ class CountdownApp:
             self.font_loaded = False
 
         self.root.title("Countdown Timer")
-        self.root.geometry("800x350")
+        self.root.geometry("1200x350")
         self.root.attributes('-topmost', True, '-transparentcolor', '#FFFF00')
         self.root.overrideredirect(True)  # Remove title bar
         self.root.configure(bg='#FFFF00')  # Set window background to yellow for transparency
@@ -88,8 +88,8 @@ class CountdownApp:
             self.input_frame,
             text="Shenanigans timer by r/Father_Enrico\n"
             "Click a character to start their cooldown timer, pressing 'R' will restart the timer\n"
-            "'x bound' refers to if you want to time from when the move ends or starts\n"
-            "lower = when R is pressed, upper = when the move ends. im not adding every small bound like hakari doors being hit\n",
+            "Certain characters like megumi have their cooldowns adjusted as moves only go on cooldown when the move ends\nso if the timings feel off its for this reason \n"
+            "Upper bound = adjusted for when the move ends (so if you cancel it sooner it will display slightly off)\n",
             font=self.custom_font,
             justify=tk.CENTER
         )
@@ -100,7 +100,6 @@ class CountdownApp:
             'Gojo': {'time': 15, 'color': '#02acff', 'completed_color': '#2bd5ff', 'text': 'Limitless'},
             'Yuji': {'time': 2, 'color': '#860000', 'completed_color': '#f90000', 'text': 'Combat Instincts'},
             'Hakari': {'time': 12.5, 'color': '#02ac7f', 'completed_color': '#53fd7f', 'text': 'Door Guard'},
-            'Megumi (Lower bound)': {'time': 10, 'color': '#011e2d', 'completed_color': '#2c2d2d', 'text': 'Lurking Shadow'},  # color needs redoing
             'Megumi (Upper bound)': {'time': 11.8, 'color': '#011e2d', 'completed_color': '#2c2d2d', 'text': 'Lurking Shadow'},  # color needs redoing
             'Mahito': {'time': 0.2, 'color': '#558dff', 'completed_color': '#a6a9ff', 'text': 'Self Transfiguration'},
             'Choso': {'time': 20, 'color': '#410000', 'completed_color': '#7f0000', 'text': 'Convergence'},
@@ -132,7 +131,7 @@ class CountdownApp:
             btn.grid(row=row, column=col, padx=2, pady=2)  # Using grid instead of pack
         
         # Label for countdown with click and drag binding
-        self.label = tk.Label(self.root, text="Select preset timer", 
+        self.label = tk.Label(self.root, text="Drag Me", 
             font=self.custom_font)
         self.label.pack(pady=10)
         self.label.bind('<Button-1>', self.start_drag)
