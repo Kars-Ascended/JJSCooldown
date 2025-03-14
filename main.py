@@ -97,17 +97,17 @@ class CountdownApp:
 
         # Define presets with their times and colors (make the main colour the average of the ult bar colours, and the completed colour the top of the ult bar)
         self.presets = {
-            'Gojo': {'time': 15, 'color': '#02acff', 'completed_color': '#2bd5ff', 'text': 'Limitless'},
+            'Gojo': {'time': 15.6, 'color': '#02acff', 'completed_color': '#2bd5ff', 'text': 'Limitless'},
             'Yuji': {'time': 2, 'color': '#860000', 'completed_color': '#f90000', 'text': 'Combat Instincts'},
-            'Hakari': {'time': 12.5, 'color': '#02ac7f', 'completed_color': '#53fd7f', 'text': 'Door Guard'},
+            'Hakari': {'time': 12.6, 'color': '#02ac7f', 'completed_color': '#53fd7f', 'text': 'Door Guard'},
             'Megumi (Upper bound)': {'time': 11.8, 'color': '#011e2d', 'completed_color': '#2c2d2d', 'text': 'Lurking Shadow'},  # color needs redoing
             'Mahito': {'time': 0.2, 'color': '#558dff', 'completed_color': '#a6a9ff', 'text': 'Self Transfiguration'},
-            'Choso': {'time': 20, 'color': '#410000', 'completed_color': '#7f0000', 'text': 'Convergence'},
+            'Choso': {'time': 20.5, 'color': '#410000', 'completed_color': '#7f0000', 'text': 'Convergence'},
             'Todo (Normal)': {'time': 10.5, 'color': '#80d5ff', 'completed_color': '#f9fdff', 'text': 'Boogie Woogie'},
             'Todo (Perfect / Bluff)': {'time': 2, 'color': '#80d5ff', 'completed_color': '#f9fdff', 'text': 'Boogie Woogie'},
             'Todo (Throwable)': {'time': 5, 'color': '#80d5ff', 'completed_color': '#f9fdff', 'text': 'Boogie Woogie'},
             'Higuruma (NOT ADDED YET)': {'time': 2, 'color': '#795023', 'completed_color': '#b07f3c', 'text': 'NONE'},
-            'Locust': {'time': 10, 'color': '#398d00', 'completed_color': '#54a900', 'text': 'Fluttering Pounce'}
+            'Locust': {'time': 10.4, 'color': '#398d00', 'completed_color': '#54a900', 'text': 'Fluttering Pounce'}
         }
         
         # Create buttons frame instead of input field
