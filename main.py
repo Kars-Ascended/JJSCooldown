@@ -332,7 +332,11 @@ class CountdownApp:
             self.start_countdown(new_time, self.yuji_config['color'], 
                                self.yuji_config['completed_color'], start_immediately=False)
         
+        # Update both outline and main text
+        for outline in self.text_outline:
+            self.canvas.itemconfig(outline, text=text)
         self.canvas.itemconfig(self.text_element, text=text)
+        
         self.last_time = new_time
     
     def on_closing(self):
