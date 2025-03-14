@@ -2,10 +2,40 @@ import tkinter as tk
 from pynput import keyboard
 import threading
 import time
+import tkinter.font as tkfont
+import os
+from ctypes import windll
+
+# Get the path to your font file (assuming it's in the same directory as main.py)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+font_path = os.path.join(current_dir, "FingerPaint.ttf")  # Replace with your font filename
+
+
 
 class CountdownApp:
     def __init__(self):
         self.root = tk.Tk()
+        
+        # Register font with Windows and tkinter
+        font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'FingerPaint.ttf')
+        try:
+            # Register font with Windows
+            result = windll.gdi32.AddFontResourceW(font_path)
+            print(f"Font registration result: {result}")  # 1 means success
+            
+            # Load and register with tkinter
+            self.root.tk.call('font', 'create', 'FingerPaint')
+            self.custom_font = tkfont.Font(family="Finger Paint", size=13)
+            
+            # Print available fonts for debugging
+            print("Available fonts:", [f for f in tkfont.families() if 'finger' in f.lower()])
+            
+            self.font_loaded = True
+        except Exception as e:
+            print(f"Error loading font: {e}")
+            self.custom_font = ("Arial", 13)
+            self.font_loaded = False
+
         self.root.title("Countdown Timer")
         self.root.geometry("800x350")
         self.root.attributes('-topmost', True, '-transparentcolor', '#FFFF00')
@@ -24,9 +54,30 @@ class CountdownApp:
         self.border = self.canvas.create_rectangle(1, 1, 303, 23, outline='gray', width=2)
         # Progress bar now fits inside 2px border, with extra pixel top/left
         self.progress_bar = self.canvas.create_rectangle(2, 2, 2, 21, fill='red')
-        # Text element adjusted for new center
-        self.text_element = self.canvas.create_text(151, 11, text="", fill="black", anchor="center", 
-                                                  font=("Times New Roman", 13))
+        
+        # Create outline effect with multiple black text objects
+        offset = 1  # Adjust this value to change outline thickness
+        self.text_outline = []
+        for x_offset in [-offset, offset]:
+            for y_offset in [-offset, offset]:
+                outline = self.canvas.create_text(
+                    151 + x_offset, 
+                    11 + y_offset, 
+                    text="",
+                    fill="black",
+                    anchor="center",
+                    font=self.custom_font
+                )
+                self.text_outline.append(outline)
+        
+        # Create the main white text on top
+        self.text_element = self.canvas.create_text(
+            151, 11,
+            text="",
+            fill="white",
+            anchor="center",
+            font=self.custom_font
+        )
         
         # Create a frame for input elements
         self.input_frame = tk.Frame(self.root)
@@ -38,9 +89,8 @@ class CountdownApp:
             text="Shenanigans timer by r/Father_Enrico\n"
             "Click a character to start their cooldown timer, pressing 'R' will restart the timer\n"
             "'x bound' refers to if you want to time from when the move ends or starts\n"
-            "lower = when R is pressed, upper = when the move ends. im not adding every small bound like hakari doors being hit\n"
-            ,
-            font=("Arial", 10),
+            "lower = when R is pressed, upper = when the move ends. im not adding every small bound like hakari doors being hit\n",
+            font=self.custom_font,
             justify=tk.CENTER
         )
         description.pack(pady=5)
@@ -82,7 +132,8 @@ class CountdownApp:
             btn.grid(row=row, column=col, padx=2, pady=2)  # Using grid instead of pack
         
         # Label for countdown with click and drag binding
-        self.label = tk.Label(self.root, text="Select preset timer", font=("Arial", 20))
+        self.label = tk.Label(self.root, text="Select preset timer", 
+            font=self.custom_font)
         self.label.pack(pady=10)
         self.label.bind('<Button-1>', self.start_drag)
         self.label.bind('<B1-Motion>', self.on_drag)
@@ -147,7 +198,7 @@ class CountdownApp:
     def start_countdown(self, seconds, color, completed_color=None, start_immediately=True):
         # Cache preset lookup result
         cache_key = f"{seconds}_{color}"
-        if cache_key not in self.preset_cache:
+        if (cache_key not in self.preset_cache):
             try:
                 preset = next(
                     value for value in self.presets.values()
@@ -171,6 +222,9 @@ class CountdownApp:
             self.start_time = time.time()
             self.elapsed = 0
             self.canvas.itemconfig(self.progress_bar, fill=color, outline=color)
+            # Clear both outline and main text
+            for outline in self.text_outline:
+                self.canvas.itemconfig(outline, text="")
             self.canvas.itemconfig(self.text_element, text="")
         else:
             self.counting = False
@@ -179,9 +233,11 @@ class CountdownApp:
             self.canvas.itemconfig(self.progress_bar, 
                                  fill=self.current_completed_color, 
                                  outline=self.current_completed_color)
-            # Show text directly from cache if available
-            self.canvas.itemconfig(self.text_element, 
-                                 text=(preset['text'] if preset else ""))
+            # Update both outline and main text with preset text
+            text = preset['text'] if preset else ""
+            for outline in self.text_outline:
+                self.canvas.itemconfig(outline, text=text)
+            self.canvas.itemconfig(self.text_element, text=text)
             
             self.input_frame.pack_forget()
             self.label.pack_forget()
@@ -202,17 +258,21 @@ class CountdownApp:
                 self.label.pack_forget()
                 self.canvas.pack(pady=0)
                 self.root.geometry("304x24")
-                self.root.configure(bg='#FFFF00')  # Ensure background stays yellow
+                self.root.configure(bg='#FFFF00')  
                 
                 # Optimized progress calculation
                 progress_width = self.progress_start + (self.elapsed / self.total_seconds) * 299
                 self.canvas.coords(self.progress_bar, self.progress_start, self.progress_start,
                                  progress_width, self.progress_height)
-                self.canvas.itemconfig(self.text_element, text="")  # Hide text during countdown
+                
+                # Clear both outline and main text during countdown
+                for outline in self.text_outline:
+                    self.canvas.itemconfig(outline, text="")
+                self.canvas.itemconfig(self.text_element, text="")
                 
                 self.root.after(self.update_interval, self.countdown)
             else:
-                # Countdown complete (adjusted for 2px border)
+                # Countdown complete
                 self.counting = False
                 self.canvas.coords(self.progress_bar, self.progress_start, self.progress_start,
                                  self.progress_end, self.progress_height)
@@ -220,15 +280,18 @@ class CountdownApp:
                                      fill=self.current_completed_color,
                                      outline=self.current_completed_color)
                 
-                # Simplified text display logic
+                # Get the appropriate text to display
                 if self.is_cleave_mode and self.last_color == self.yuji_config['color']:
-                    text = self.yuji_config['cleave']['text']
+                    display_text = self.yuji_config['cleave']['text']
                 else:
                     cache_key = f"{self.last_time}_{self.last_color}"
                     preset = self.preset_cache.get(cache_key)
-                    text = preset['text'] if preset else ""
+                    display_text = preset['text'] if preset else ""
                 
-                self.canvas.itemconfig(self.text_element, text=text)
+                # Update both outline and main text
+                for outline in self.text_outline:
+                    self.canvas.itemconfig(outline, text=display_text)
+                self.canvas.itemconfig(self.text_element, text=display_text)
 
     def reset_ui(self):
         """Reset the UI to show buttons again"""
