@@ -121,26 +121,53 @@ class CountdownApp:
             'Higuruma (NOT ADDED YET)': {'time': 2, 'color': '#795023', 'completed_color': '#b07f3c', 'text': 'NONE'},
             'Locust': {'time': 10.4, 'color': '#398d00', 'completed_color': '#54a900', 'text': 'Fluttering Pounce'}
         }
-        
+
+        # Define dash presets that use 'q' key
+        self.dash_presets = {
+            'Front Dash': {'time': 6, 'color': '#ff0000', 'completed_color': '#000000', 'text': 'Front Dash', 'use_q': True},
+            'Side Dash': {'time': 2, 'color': '#795023', 'completed_color': '#b07f3c', 'text': 'Side Dash', 'use_q': True}
+        }
+
         # Create buttons frame instead of input field
         self.buttons_frame = tk.Frame(self.input_frame)
         self.buttons_frame.pack(pady=5)
         
-        # Calculate max width based on longest preset name
-        max_width = max(len(name) for name in self.presets.keys())
+        # Calculate max width based on longest preset name across both preset types
+        max_width = max(len(name) for name in list(self.presets.keys()) + list(self.dash_presets.keys()))
         
-        # Create preset buttons
+        # Create main preset buttons
         for i, (preset_name, preset_data) in enumerate(self.presets.items()):
             row = i // 4  # Integer division to determine row
             col = i % 4   # Modulo to determine column
             btn = tk.Button(
                 self.buttons_frame, 
                 text=preset_name,
-                width=max_width,  # Set fixed width for all buttons
+                width=max_width,
                 command=lambda t=preset_data['time'], c=preset_data['color'], cc=preset_data['completed_color']: 
                     self.start_countdown(t, c, cc, start_immediately=False)
             )
-            btn.grid(row=row, column=col, padx=2, pady=2)  # Using grid instead of pack
+            btn.grid(row=row, column=col, padx=2, pady=2)
+
+        # Add separator label for dash section
+        separator = tk.Label(
+            self.buttons_frame,
+            text="\nDash Cooldowns (Press 'Q' to restart)",
+            font=self.custom_font
+        )
+        # Calculate the row number for separator (after main presets)
+        separator_row = (len(self.presets) - 1) // 4 + 1
+        separator.grid(row=separator_row, column=0, columnspan=4, pady=5)
+
+        # Create dash preset buttons in the next row
+        for i, (preset_name, preset_data) in enumerate(self.dash_presets.items()):
+            btn = tk.Button(
+                self.buttons_frame,
+                text=preset_name,
+                width=max_width,
+                command=lambda t=preset_data['time'], c=preset_data['color'], cc=preset_data['completed_color']: 
+                    self.start_countdown(t, c, cc, start_immediately=False)
+            )
+            btn.grid(row=separator_row + 1, column=i, padx=2, pady=2)
         
         # Label for countdown with click and drag binding
         self.label = tk.Label(self.root, text="Drag Me", 
@@ -212,13 +239,14 @@ class CountdownApp:
         if (cache_key not in self.preset_cache):
             try:
                 preset = next(
-                    value for value in self.presets.values()
-                    if value['time'] == seconds and value['color'] == color
+                    (value for value in {**self.presets, **self.dash_presets}.values()
+                    if value['time'] == seconds and value['color'] == color),
+                    None
                 )
                 self.preset_cache[cache_key] = preset
             except StopIteration:
                 self.preset_cache[cache_key] = None
-
+        
         preset = self.preset_cache[cache_key]
         
         self.total_seconds = seconds
@@ -313,7 +341,14 @@ class CountdownApp:
 
     def on_press(self, key):
         try:
-            if key.char == 'r' and (not self.counting or self.allow_restart_anytime.get()):
+            # Get current preset based on last time and color
+            cache_key = f"{self.last_time}_{self.last_color}"
+            current_preset = self.preset_cache.get(cache_key)
+            
+            # Check if current preset uses 'q' key
+            uses_q = current_preset and current_preset.get('use_q', False)
+            
+            if ((key.char == 'r' and not uses_q) or (key.char == 'q' and uses_q)) and (not self.counting or self.allow_restart_anytime.get()):
                 if self.last_time in [self.yuji_config['cleave']['time']] and self.last_color == self.yuji_config['color']:
                     self.start_countdown(self.last_time, self.yuji_config['color'], self.yuji_config['completed_color'])
                 else:
